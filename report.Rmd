@@ -77,5 +77,5 @@ FitRF3 <- train(classe ~ ., method="rf", ntree = 10 , data = training3, trContro
 pred <- predict(FitRF3, newdata=testing3)
 print(confusionMatrix(pred, testing3$classe), digits=3)
 ```
-
+# Conclusions
 As can be seen from the results of the three cross validation, the accuracy of prediction is above 0.99. This is to say, if we are to predict the classification for TEST data set, the **out of sample error rate is going to be lower than 0.01**.
