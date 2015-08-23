@@ -1,6 +1,6 @@
 ---
 title: "Project Report of Practical Machine Learning"
-output: html_document
+output: pdf_document
 ---
 In this report, we try to build an classification model based on the *Weight Lifting Exercise Dataset*.
 We first read the TRAIN and TEST data set into the work space. TRAIN data set is a labeled data set used to train and validate (test) the model. TEST data set is an unlabeled data set which we want to predict the label for.
@@ -45,6 +45,11 @@ We estimate the accuracy of the random forest model using testing data.
 pred <- predict(FitRF, newdata=testing)
 print(confusionMatrix(pred, testing$classe), digits=3)
 ```
+We predict the classification for TEST data set.
+```{r}
+print(predict(FitRF, newdata=TEST))
+```
+
 **In order to estimate the out of sample error, we carry out cross validation as follows.**
 
 First, we divide the whole TRAIN dataset into three parts.
