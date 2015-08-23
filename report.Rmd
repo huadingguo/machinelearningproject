@@ -1,0 +1,81 @@
+---
+title: "Project Report of Practical Machine Learning"
+output: html_document
+---
+In this report, we try to build an classification model based on the *Weight Lifting Exercise Dataset*.
+We first read the TRAIN and TEST data set into the work space. TRAIN data set is a labeled data set used to train and validate (test) the model. TEST data set is an unlabeled data set which we want to predict the label for.
+```{r,message=FALSE}
+setwd("C:/Dropbox/Coursera/machinelearning")
+TRAIN <- read.csv("pml-training.csv")
+TEST <- read.csv("pml-testing.csv")
+```
+We select the predictors by observing the values and meanings of the variables. Basically, we omit the row number, time related variables and the variables with almost no non-NA values.
+```{r}
+TRAIN <- TRAIN[,-c(1,3,4,5,6,12:36,50:59,69:83,87:101,103:112,125:139,140:150)]
+TEST <- TEST[,-c(1,3,4,5,6,12:36,50:59,69:83,87:101,103:112,125:139,140:150)]
+```
+We split the TRAIN data set into training and testing.
+```{r}
+library(caret)
+inTrain <- createDataPartition(y=TRAIN$classe, p = 0.75, list=FALSE)
+training <- TRAIN[inTrain,]
+testing <- TRAIN[-inTrain,]
+```
+We then train a decision tree model to see if it works well. We also plot the tree out.
+```{r}
+library(rattle)
+FitTREE <- train(classe~., data = training, method = "rpart")
+fancyRpartPlot(FitTREE$finalModel)
+```
+We estimate the accuracy of the tree model using testing data.
+```{r}
+pred <- predict(FitTREE, testing);
+testing$predRight <-pred == testing$classe
+table(pred,testing$classe)
+```
+Apparently, the accuracy is not very satisfying. So we decide to use random forest.
+
+We train a random forest model 
+```{r,cache=TRUE}
+FitRF <- train(classe ~ ., method="rf", ntree = 10, data = training, trControl=trainControl(method = "cv", number = 5))
+print(FitRF, digits = 3)
+```
+We estimate the accuracy of the random forest model using testing data.
+```{r}
+pred <- predict(FitRF, newdata=testing)
+print(confusionMatrix(pred, testing$classe), digits=3)
+```
+**In order to estimate the out of sample error, we carry out cross validation as follows.**
+
+First, we divide the whole TRAIN dataset into three parts.
+```{r}
+folds <- createFolds(y=TRAIN$classe,k=3)
+```
+Then we use two parts as training data set and the other one as testing data set, which is as shown below.
+
+**Cross Validation 1**
+```{r,cache=TRUE}
+training1 <- TRAIN[c(folds[[2]],folds[[3]]),]
+testing1  <- TRAIN[folds[[1]],]
+FitRF1 <- train(classe ~ ., method="rf", ntree = 10 , data = training1, trControl=trainControl(method = "cv", number = 5))
+pred <- predict(FitRF1, newdata=testing1)
+print(confusionMatrix(pred, testing1$classe), digits=3)
+```
+**Cross Validation 2**
+```{r,cache=TRUE}
+training2 <- TRAIN[c(folds[[1]],folds[[3]]),]
+testing2  <- TRAIN[folds[[2]],]
+FitRF2 <- train(classe ~ ., method="rf", ntree = 10 , data = training2, trControl=trainControl(method = "cv", number = 5))
+pred <- predict(FitRF2, newdata=testing2)
+print(confusionMatrix(pred, testing2$classe), digits=3)
+```
+**Cross Validation 3**
+```{r,cache=TRUE}
+training3 <- TRAIN[c(folds[[1]],folds[[2]]),]
+testing3  <- TRAIN[folds[[3]],]
+FitRF3 <- train(classe ~ ., method="rf", ntree = 10 , data = training3, trControl=trainControl(method = "cv", number = 5))
+pred <- predict(FitRF3, newdata=testing3)
+print(confusionMatrix(pred, testing3$classe), digits=3)
+```
+
+As can be seen from the results of the three cross validation, the accuracy of prediction is above 0.99. This is to say, if we are to predict the classification for TEST data set, the **out of sample error rate is going to be lower than 0.01**.
